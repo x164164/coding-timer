@@ -1883,11 +1883,26 @@ const App = {
       records: StorageManager.load('records')
     };
     const hasStoredData = Object.values(stored).some(value => value !== null);
+    const initialVersion = window.INITIAL_DATA && window.INITIAL_DATA.version;
+    const storedVersion = localStorage.getItem('coding_data_version');
+
+    // 数据版本变更时：用 INITIAL_DATA 覆盖题目和记录，保留已有的学生名单
+    if (initialVersion && storedVersion !== String(initialVersion)) {
+      const migrated = JSON.parse(JSON.stringify(window.INITIAL_DATA));
+      this.students = (stored.students && stored.students.length) ? stored.students : (migrated.students || []);
+      this.questions = migrated.questions || [];
+      this.records = migrated.records || [];
+      localStorage.setItem('coding_data_version', String(initialVersion));
+      this.saveData();
+      return;
+    }
+
     if (!hasStoredData && !StorageManager.isInitialized() && window.INITIAL_DATA) {
       const migrated = JSON.parse(JSON.stringify(window.INITIAL_DATA));
       this.students = migrated.students || [];
       this.questions = migrated.questions || [];
       this.records = migrated.records || [];
+      if (initialVersion) localStorage.setItem('coding_data_version', String(initialVersion));
       this.saveData();
       return;
     }
